@@ -129,6 +129,8 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
+!.env.example
 .venv
 env/
 venv/
@@ -179,3 +181,14 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Nuxt build output and dependencies
+.nuxt/
+.output/
+.data/
+.nitro/
+node_modules/
+
+# Local AI agent implementation instructions
+/docs/
+/AGENTS.md
