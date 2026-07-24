@@ -326,25 +326,47 @@ PORT=8080 node .output/server/index.mjs
 
 ## Cloud Run
 
-MVPでは、リポジトリの `Dockerfile` を使ったソースデプロイを基本とします。Cloud Runが `PORT` を自動設定するため、手動で `PORT` を設定する必要はありません。
+本番サービスは、GitHubの `main` ブランチとCloud Buildトリガーを接続して継続的にデプロイします。
 
-```bash
-gcloud auth login
-gcloud config set project <project-id>
-gcloud config list
+```text
+develop
+  ↓ リリース時にmainへ統合
+main
+  ↓ pushをCloud Buildが検知
+Dockerfileでコンテナをビルド
+  ↓
+Cloud Run: idea-flux
 ```
 
-デプロイ例：
+Cloud Runの推奨設定：
 
-```bash
+| 項目 | 設定 |
+|---|---|
+| サービス名 | `idea-flux` |
+| 対象ブランチ | `^main$` |
+| ビルド方式 | リポジトリ直下の `Dockerfile` |
+| リージョン | `asia-northeast1` |
+| 未認証アクセス | 許可（提出用公開URL） |
+| 最小インスタンス数 | `0` |
+| 最大インスタンス数 | `1` |
+
+本番環境変数：
+
+```dotenv
+NUXT_ASSOCIATION_PROVIDER=gemini
+NUXT_GEMINI_MODEL=gemini-3.5-flash-lite
+```
+
+`NUXT_GEMINI_API_KEY` はソースコードやCloud Build設定へ書かず、Secret Managerの `idea-flux-gemini-api-key` からCloud Runへ渡します。
+
+Cloud Runは `PORT` を自動設定するため、手動で `PORT` を設定する必要はありません。
+
+緊急時や継続的デプロイを使わない場合に限り、ローカルから手動デプロイできます。
+
+```powershell
 gcloud run deploy idea-flux `
   --source . `
-  --region asia-northeast1 `
-  --allow-unauthenticated `
-  --min 0 `
-  --max 1 `
-  --update-env-vars NUXT_ASSOCIATION_PROVIDER=gemini,NUXT_GEMINI_MODEL=gemini-3.5-flash-lite `
-  --update-secrets NUXT_GEMINI_API_KEY=idea-flux-gemini-api-key:latest
+  --region asia-northeast1
 ```
 
 費用対策：
