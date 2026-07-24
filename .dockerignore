@@ -1,0 +1,16 @@
+.git
+.github
+.vscode
+.nuxt
+.output
+node_modules
+
+.env
+.env.*
+!.env.example
+
+AGENTS.md
+docs
+
+*.log
+npm-debug.log*
