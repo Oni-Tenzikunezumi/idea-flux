@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #f4f1e8;
+  --color-paper: #fffdf6;
+  --color-ink: #173126;
+  --color-muted: #66766d;
+  --color-leaf: #2f7754;
+  --color-leaf-dark: #20583c;
+  --color-sun: #dfa33b;
+  --color-clay: #c96542;
+  --font-sans: Inter, "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", sans-serif;
+  --font-display: Georgia, "Yu Mincho", "Hiragino Mincho ProN", serif;
+}
+
+:root {
+  color-scheme: light;
+  color: var(--color-ink);
+  background: var(--color-canvas);
+  font-synthesis: none;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--color-canvas);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    linear-gradient(rgba(47, 119, 84, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(47, 119, 84, 0.035) 1px, transparent 1px),
+    var(--color-canvas);
+  background-size: 36px 36px;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
