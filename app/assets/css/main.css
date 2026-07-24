@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #f4f1e8;
-  --color-paper: #fffdf6;
-  --color-ink: #173126;
-  --color-muted: #66766d;
-  --color-leaf: #2f7754;
-  --color-leaf-dark: #20583c;
-  --color-sun: #dfa33b;
-  --color-clay: #c96542;
+  --color-canvas: #07111f;
+  --color-paper: #101d31;
+  --color-ink: #eaf2ff;
+  --color-muted: #90a4c3;
+  --color-leaf: #34d399;
+  --color-leaf-dark: #10b981;
+  --color-sun: #fbbf24;
+  --color-clay: #fb7185;
   --font-sans: Inter, "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", sans-serif;
   --font-display: Georgia, "Yu Mincho", "Hiragino Mincho ProN", serif;
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
   color: var(--color-ink);
   background: var(--color-canvas);
   font-synthesis: none;
@@ -31,17 +31,24 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    linear-gradient(rgba(47, 119, 84, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(47, 119, 84, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 50% -20%, rgb(14 165 233 / 0.1), transparent 38rem),
+    linear-gradient(rgb(125 211 252 / 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(125 211 252 / 0.025) 1px, transparent 1px),
     var(--color-canvas);
-  background-size: 36px 36px;
+  background-size: auto, 42px 42px, 42px 42px, auto;
 }
 
 button,
-textarea {
+textarea,
+input {
   font: inherit;
 }
 
 button {
   -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  color: #07111f;
+  background: #7dd3fc;
 }
