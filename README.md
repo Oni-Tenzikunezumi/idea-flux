@@ -1,8 +1,8 @@
 # Idea Flux
 
-Idea Flux は、1つの単語・文章・アイデアから、距離と観点の異なる3つの連想を生成する Nuxt ベースのWebアプリです。
+Idea Flux は、1つのテーマから距離と観点の異なる連想を生成し、放射状のアイデア空間として探索できる Nuxt ベースのWebアプリです。
 
-生成された連想カードを選択すると、その項目を新しい起点として連想を続けられます。
+生成されたバブルは消えずに空間へ残り、選択したバブルからさらに連想を生成したり、自分のアイデアを追加したりできます。
 
 Google AI Dojo 2026 Season 2 最終課題向けのMVPです。
 
@@ -17,20 +17,14 @@ Google AI Dojo 2026 Season 2 最終課題向けのMVPです。
 | 別観点 | 立場、用途、時間軸、前提などを変えた連想 |
 
 ```text
-入力
+今回のテーマ
   ↓
-3つの連想を生成
+中心バブルと3方向の連想
   ↓
-連想カードを選択
-  ↓
-確認ダイアログ
-  ↓
-選択項目から再び3つの連想を生成
+バブルを選択
+  ├─ Geminiで3つ追加
+  └─ 自分のアイデアを追加
 ```
-
-詳細な仕様は [`docs/spec.md`](./docs/spec.md) を参照してください。
-
-Codexなどのエージェントが作業する場合は、先に [`AGENTS.md`](./AGENTS.md) を参照してください。
 
 ## 技術構成
 
@@ -58,11 +52,12 @@ Dummy Provider または Gemini Developer API
 
 ### 実装対象
 
-- チャット形式の入力欄
-- 3種類の連想カード
-- カード選択時の確認ダイアログ
+- 放射状のアイデア空間
+- 3種類のAI連想バブル
 - 選択項目からの再連想
-- フロントエンド上の簡易履歴
+- 手動バブルの追加
+- パン、ズーム、選択経路表示
+- フロントエンド上のグラフ状態
 - ダミーAPI
 - Gemini API
 - Cloud Runへのデプロイ
@@ -74,7 +69,6 @@ Dummy Provider または Gemini Developer API
 - データベース
 - ログイン
 - 履歴の永続保存
-- 本格的なツリー表示
 - 泡の物理アニメーション
 - ラバランプ風の分裂・結合
 - 管理画面
@@ -238,24 +232,6 @@ API bodyにはユーザー入力だけを含めます。
 
 内部プロンプトには秘密情報を含めません。
 
-## 実装フェーズ
-
-```text
-Phase 0：事前確認
-Phase 1：Nuxt初期環境と共通型
-Phase 2：UIとダミーAPI
-Phase 3：親エージェントによる統合
-Phase 4：レビュー
-Phase 5：Gemini接続
-Phase 6：Gemini統合確認
-Phase 7：Cloud Run準備
-Phase 8：Cloud Runデプロイ
-```
-
-詳細は `docs/spec.md` を参照してください。
-
-編集範囲とエージェント規約は `AGENTS.md` を参照してください。
-
 ## テスト
 
 `package.json` に存在するスクリプトだけを実行します。
@@ -304,15 +280,15 @@ curl -X POST   http://localhost:3000/api/associations   -H "Content-Type: applic
 
 ### UI手動テスト
 
-- 初期状態ではカードを表示しない
+- 初期状態ではバブルを表示しない
 - Enterで送信、Shift＋Enterで改行
 - ローディング中は二重送信不可
-- 3枚のカードが表示される
-- カード選択で確認ダイアログが開く
-- キャンセル時は元のカードを維持
-- 確定後に再連想
-- 履歴はAPI成功後のみ更新
-- 再生成失敗時は元のカードを維持
+- 中心バブルと3つの連想バブルが表示される
+- バブル選択ではフォーカスだけが移動する
+- 生成成功後も既存バブルが残る
+- 手動バブルを追加できる
+- パン、ホイールズーム、テーマへ戻る操作ができる
+- 再生成失敗時も既存バブルを維持する
 - 360～430px幅で致命的な崩れがない
 
 ### Gemini固有テスト
@@ -350,7 +326,7 @@ PORT=8080 node .output/server/index.mjs
 
 ## Cloud Run
 
-MVPではソースデプロイを基本とします。
+MVPでは、リポジトリの `Dockerfile` を使ったソースデプロイを基本とします。Cloud Runが `PORT` を自動設定するため、手動で `PORT` を設定する必要はありません。
 
 ```bash
 gcloud auth login
@@ -361,7 +337,14 @@ gcloud config list
 デプロイ例：
 
 ```bash
-gcloud run deploy idea-flux   --source .   --region asia-northeast1   --allow-unauthenticated   --min 0   --max 1
+gcloud run deploy idea-flux `
+  --source . `
+  --region asia-northeast1 `
+  --allow-unauthenticated `
+  --min 0 `
+  --max 1 `
+  --update-env-vars NUXT_ASSOCIATION_PROVIDER=gemini,NUXT_GEMINI_MODEL=gemini-3.5-flash-lite `
+  --update-secrets NUXT_GEMINI_API_KEY=idea-flux-gemini-api-key:latest
 ```
 
 費用対策：
