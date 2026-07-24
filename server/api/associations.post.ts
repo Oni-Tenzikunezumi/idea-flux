@@ -4,6 +4,7 @@ import type {
   AssociationResponse,
 } from '../../shared/types/association'
 import { createDummyAssociations } from '../services/dummy-association'
+import { createGeminiAssociations } from '../services/gemini-association'
 
 const invalidPromptResponse: ApiErrorResponse = {
   error: {
@@ -16,6 +17,13 @@ const internalErrorResponse: ApiErrorResponse = {
   error: {
     code: 'INTERNAL_ERROR',
     message: '処理中にエラーが発生しました。',
+  },
+}
+
+const aiRequestFailedResponse: ApiErrorResponse = {
+  error: {
+    code: 'AI_REQUEST_FAILED',
+    message: '連想を生成できませんでした。時間をおいてもう一度お試しください。',
   },
 }
 
@@ -64,7 +72,28 @@ export default defineEventHandler(async (event): Promise<AssociationResponse | A
   }
 
   try {
-    return createDummyAssociations(request.prompt)
+    const config = useRuntimeConfig(event)
+    const provider = String(config.associationProvider || 'dummy').trim()
+
+    if (provider === 'dummy') {
+      return createDummyAssociations(request.prompt)
+    }
+
+    if (provider === 'gemini') {
+      try {
+        return await createGeminiAssociations(request.prompt, {
+          apiKey: String(config.geminiApiKey || ''),
+          model: String(config.geminiModel || ''),
+        })
+      }
+      catch {
+        setResponseStatus(event, 502)
+        return aiRequestFailedResponse
+      }
+    }
+
+    setResponseStatus(event, 500)
+    return internalErrorResponse
   }
   catch {
     setResponseStatus(event, 500)
