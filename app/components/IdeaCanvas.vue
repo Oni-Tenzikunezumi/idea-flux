@@ -6,6 +6,7 @@ const props = defineProps<{
   nodes: IdeaNode[]
   edges: IdeaEdge[]
   focusedNodeId: string
+  maxVisibleCells: number
   isBusy?: boolean
 }>()
 
@@ -65,6 +66,18 @@ const ancestorPath = computed(() => {
     )
     if (edge) edgeIds.add(edge.id)
     currentId = current.parentId
+  }
+
+  return { edgeIds, nodeIds }
+})
+const focusNeighborhood = computed(() => {
+  const edgeIds = new Set(ancestorPath.value.edgeIds)
+  const nodeIds = new Set(ancestorPath.value.nodeIds)
+
+  for (const edge of props.edges) {
+    if (edge.fromNodeId !== props.focusedNodeId) continue
+    edgeIds.add(edge.id)
+    nodeIds.add(edge.toNodeId)
   }
 
   return { edgeIds, nodeIds }
@@ -150,6 +163,14 @@ watch(
     centerFocusedNode()
   },
 )
+
+watch(
+  () => props.focusedNodeId,
+  async () => {
+    await nextTick()
+    centerFocusedNode()
+  },
+)
 </script>
 
 <template>
@@ -225,7 +246,16 @@ watch(
           :y1="originY + (positionedNodeMap.get(edge.fromNodeId)?.y ?? 0)"
           :x2="originX + (positionedNodeMap.get(edge.toNodeId)?.x ?? 0)"
           :y2="originY + (positionedNodeMap.get(edge.toNodeId)?.y ?? 0)"
-          :class="ancestorPath.edgeIds.has(edge.id) ? 'idea-edge idea-edge--active' : 'idea-edge'"
+          :class="[
+            'idea-edge',
+            {
+              'idea-edge--active': ancestorPath.edgeIds.has(edge.id),
+              'idea-edge--related':
+                !ancestorPath.edgeIds.has(edge.id)
+                && focusNeighborhood.edgeIds.has(edge.id),
+              'idea-edge--unrelated': !focusNeighborhood.edgeIds.has(edge.id),
+            },
+          ]"
         />
       </svg>
 
@@ -239,6 +269,7 @@ watch(
           :node="node"
           :disabled="isBusy"
           :is-path="ancestorPath.nodeIds.has(node.id)"
+          :is-related="focusNeighborhood.nodeIds.has(node.id)"
           :is-generating-parent="isBusy && node.id === focusedNodeId"
           @focus="emit('focus', $event)"
           @center="centerNodeAtDefaultZoom"
@@ -247,7 +278,7 @@ watch(
     </div>
 
     <div class="pointer-events-none absolute bottom-4 left-4 z-20 rounded-full border border-white/10 bg-slate-950/55 px-3 py-1.5 text-[0.65rem] text-slate-400 backdrop-blur">
-      {{ nodes.length }} / 50 bubbles · ホイールで拡大縮小
+      {{ nodes.length }} / {{ maxVisibleCells }} cells · ホイールで拡大縮小
     </div>
   </section>
 </template>
@@ -268,14 +299,24 @@ watch(
 }
 
 .idea-edge {
-  stroke: rgb(125 211 252 / 0.36);
-  stroke-width: 2.25;
-  transition: stroke 220ms ease, stroke-width 220ms ease;
+  stroke: rgb(125 211 252 / 0.48);
+  stroke-width: 2.5;
+  transition: stroke 220ms ease, stroke-width 220ms ease, opacity 220ms ease;
+}
+
+.idea-edge--related {
+  stroke: rgb(125 211 252 / 0.68);
+  stroke-width: 2.9;
 }
 
 .idea-edge--active {
-  stroke: rgb(125 211 252 / 0.82);
-  stroke-width: 3.5;
+  stroke: rgb(186 230 253 / 0.94);
+  stroke-width: 4;
+  filter: drop-shadow(0 0 4px rgb(125 211 252 / 0.36));
+}
+
+.idea-edge--unrelated {
+  opacity: 0.58;
 }
 
 @media (prefers-reduced-motion: reduce) {

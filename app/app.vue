@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { IdeaNodeKind } from './composables/useIdeaSpace'
+
 const {
   initialPrompt,
   manualInput,
@@ -13,13 +15,12 @@ const {
   canGenerate,
   canAddManual,
   capacityMessage,
+  maxVisibleCells,
   startSpace,
   generateFromFocusedNode,
   focusNode,
   addManualNode,
 } = useIdeaSpace()
-
-const manualInputElement = ref<HTMLInputElement | null>(null)
 
 const kindLabels = {
   root: '探索の起点',
@@ -29,17 +30,86 @@ const kindLabels = {
   custom: 'あなたのアイデア',
 } as const
 
+const kindColors: Record<IdeaNodeKind, string> = {
+  root: '#7dd3fc',
+  direct: '#34d399',
+  distant: '#a78bfa',
+  alternative: '#fb7185',
+  custom: '#fbbf24',
+}
+
+const controlPanel = ref<HTMLElement | null>(null)
+const panelOffset = reactive({ x: 0, y: 0 })
+const isDraggingPanel = ref(false)
+const panelDragState = {
+  pointerId: -1,
+  startX: 0,
+  startY: 0,
+  originX: 0,
+  originY: 0,
+  minX: 0,
+  maxX: 0,
+  minY: 0,
+  maxY: 0,
+}
+
 function handleInitialKeydown(event: KeyboardEvent) {
   if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return
   event.preventDefault()
   void startSpace()
 }
 
-async function handleFocusNode(nodeId: string) {
-  focusNode(nodeId)
-  await nextTick()
-  manualInputElement.value?.focus()
+function resetControlPanelPosition() {
+  panelOffset.x = 0
+  panelOffset.y = 0
 }
+
+function handlePanelPointerDown(event: PointerEvent) {
+  if (event.button !== 0) return
+
+  const panel = controlPanel.value
+  const handle = event.currentTarget as HTMLElement
+  if (!panel) return
+
+  const rect = panel.getBoundingClientRect()
+  const edgeGap = 8
+  panelDragState.pointerId = event.pointerId
+  panelDragState.startX = event.clientX
+  panelDragState.startY = event.clientY
+  panelDragState.originX = panelOffset.x
+  panelDragState.originY = panelOffset.y
+  panelDragState.minX = panelOffset.x + edgeGap - rect.left
+  panelDragState.maxX = panelOffset.x + window.innerWidth - edgeGap - rect.right
+  panelDragState.minY = panelOffset.y + edgeGap - rect.top
+  panelDragState.maxY = panelOffset.y + window.innerHeight - edgeGap - rect.bottom
+  isDraggingPanel.value = true
+  handle.setPointerCapture(event.pointerId)
+  event.preventDefault()
+}
+
+function handlePanelPointerMove(event: PointerEvent) {
+  if (!isDraggingPanel.value || event.pointerId !== panelDragState.pointerId) return
+
+  const nextX = panelDragState.originX + event.clientX - panelDragState.startX
+  const nextY = panelDragState.originY + event.clientY - panelDragState.startY
+  panelOffset.x = Math.min(panelDragState.maxX, Math.max(panelDragState.minX, nextX))
+  panelOffset.y = Math.min(panelDragState.maxY, Math.max(panelDragState.minY, nextY))
+}
+
+function handlePanelPointerUp(event: PointerEvent) {
+  if (event.pointerId !== panelDragState.pointerId) return
+
+  const handle = event.currentTarget as HTMLElement
+  if (handle.hasPointerCapture(event.pointerId)) {
+    handle.releasePointerCapture(event.pointerId)
+  }
+  isDraggingPanel.value = false
+  panelDragState.pointerId = -1
+}
+
+onMounted(() => window.addEventListener('resize', resetControlPanelPosition))
+onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosition))
+
 </script>
 
 <template>
@@ -64,7 +134,7 @@ async function handleFocusNode(nodeId: string) {
           Idea Flux
         </h1>
         <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-400 sm:text-base">
-          ひとつの泡から、考えを深め、遠くへつなぎ、別の角度へひらいていく。
+          ひとつのセルから、考えを深め、遠くへつなぎ、別の角度へひらいていく。
         </p>
       </header>
 
@@ -126,7 +196,8 @@ async function handleFocusNode(nodeId: string) {
         :edges="edges"
         :focused-node-id="focusedNodeId"
         :is-busy="isGenerating"
-        @focus="handleFocusNode"
+        :max-visible-cells="maxVisibleCells"
+        @focus="focusNode"
       />
 
       <header class="pointer-events-none absolute top-4 right-4 z-20 max-w-[55vw] text-right sm:top-6 sm:right-7">
@@ -137,19 +208,55 @@ async function handleFocusNode(nodeId: string) {
           Idea Flux
         </h1>
         <p class="mt-1 text-[0.65rem] text-slate-400 sm:text-xs">
-          {{ nodes.length }} / 50 bubbles
+          {{ nodes.length }} / {{ maxVisibleCells }} cells
         </p>
       </header>
 
       <section
         v-if="focusedNode"
-        class="control-panel absolute right-3 bottom-3 left-3 z-20 mx-auto max-h-[42dvh] max-w-5xl overflow-y-auto rounded-[1.5rem] border border-slate-700/90 bg-[#101d31]/94 p-4 shadow-[0_20px_70px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:right-5 sm:bottom-5 sm:left-5 sm:p-5"
+        ref="controlPanel"
+        class="control-panel absolute right-3 bottom-3 left-3 z-20 mx-auto max-h-[42dvh] max-w-5xl overflow-y-auto rounded-2xl border border-sky-200/20 bg-[#0d192b]/94 p-4 shadow-[0_20px_70px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:right-5 sm:bottom-5 sm:left-5 sm:p-5 lg:top-1/2 lg:right-auto lg:bottom-auto lg:left-[calc(50%+7.5rem)] lg:mx-0 lg:max-h-[calc(100dvh-2rem)] lg:w-[min(27rem,calc(50vw-9rem))] lg:max-w-none"
+        :class="{ 'control-panel--dragging': isDraggingPanel }"
+        :style="{
+          '--panel-offset-x': `${panelOffset.x}px`,
+          '--panel-offset-y': `${panelOffset.y}px`,
+        }"
         aria-labelledby="focused-heading"
       >
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.75fr)] lg:items-end">
+        <div
+          class="control-panel__handle -mx-1 -mt-1 mb-3 flex min-h-7 items-center justify-between gap-3 rounded-lg px-2 text-[0.65rem] text-slate-400"
+          aria-label="操作パネルをドラッグして移動"
+          @pointerdown="handlePanelPointerDown"
+          @pointermove="handlePanelPointerMove"
+          @pointerup="handlePanelPointerUp"
+          @pointercancel="handlePanelPointerUp"
+        >
+          <span class="flex items-center gap-2">
+            <span class="text-base leading-none text-sky-200/70" aria-hidden="true">⠿</span>
+            ドラッグして移動
+          </span>
+          <button
+            type="button"
+            class="rounded-md px-2 py-1 text-slate-400 transition hover:bg-white/8 hover:text-white focus-visible:outline-2 focus-visible:outline-sky-300"
+            @pointerdown.stop
+            @click="resetControlPanelPosition"
+          >
+            位置を戻す
+          </button>
+        </div>
+
+        <div class="grid gap-4">
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <p class="text-[0.6rem] font-bold tracking-[0.18em] text-sky-300 uppercase">
+              <p
+                class="flex items-center gap-1.5 text-[0.6rem] font-bold tracking-[0.18em] uppercase"
+                :style="{ color: kindColors[focusedNode.kind] }"
+              >
+                <span
+                  class="size-1.5 rounded-full shadow-[0_0_8px_currentColor]"
+                  :style="{ backgroundColor: kindColors[focusedNode.kind] }"
+                  aria-hidden="true"
+                />
                 {{ kindLabels[focusedNode.kind] }}
               </p>
               <span class="text-[0.65rem] text-slate-500">
@@ -167,20 +274,19 @@ async function handleFocusNode(nodeId: string) {
               <button
                 type="button"
                 :disabled="!canGenerate"
-                class="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-sky-300 px-5 py-2 text-sm font-black text-slate-950 transition hover:bg-sky-200 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-sky-200 disabled:cursor-not-allowed disabled:opacity-35"
+                class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-sky-300 px-5 py-2 text-sm font-black text-slate-950 transition hover:bg-sky-200 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-sky-200 disabled:cursor-not-allowed disabled:opacity-35"
                 @click="generateFromFocusedNode"
               >
-                <span v-if="isGenerating" class="spinner" aria-hidden="true" />
-                {{ isGenerating ? '生成中…' : 'この泡から3つ生成' }}
+                {{ isGenerating ? '生成中…' : 'Geminiでアイデアを生成' }}
               </button>
-              <p class="hidden text-[0.68rem] text-slate-500 sm:block">
-                泡の選択だけでは配置は変わりません
+              <p class="hidden text-[0.68rem] text-slate-400 sm:block">
+                セルを選ぶと、そのセルを中心に探索できます
               </p>
             </div>
           </div>
 
           <form
-            class="rounded-xl border border-amber-300/15 bg-amber-300/5 p-3"
+            class="rounded-lg border border-amber-300/15 bg-amber-300/5 p-3"
             @submit.prevent="addManualNode"
           >
             <div class="flex items-center justify-between gap-3">
@@ -194,11 +300,10 @@ async function handleFocusNode(nodeId: string) {
             <div class="mt-2 flex gap-2">
               <input
                 id="manual-idea"
-                ref="manualInputElement"
                 v-model="manualInput"
                 type="text"
                 maxlength="30"
-                placeholder="この泡からつなげたいこと"
+                placeholder="このセルからつなげたいこと"
                 :disabled="!canAddManual"
                 class="min-h-10 min-w-0 flex-1 rounded-lg border border-slate-600 bg-[#07111f]/80 px-3 py-2 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-amber-300 focus:ring-3 focus:ring-amber-300/10 disabled:cursor-not-allowed disabled:opacity-45"
               />
@@ -260,19 +365,34 @@ async function handleFocusNode(nodeId: string) {
 
 .control-panel {
   overscroll-behavior: contain;
+  transform: translate(var(--panel-offset-x, 0), var(--panel-offset-y, 0));
 }
 
-.spinner {
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid rgb(15 23 42 / 0.25);
-  border-top-color: #0f172a;
-  border-radius: 9999px;
-  animation: spin 700ms linear infinite;
+.control-panel--dragging {
+  user-select: none;
+  will-change: transform;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.control-panel__handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.control-panel--dragging .control-panel__handle {
+  cursor: grabbing;
+}
+
+@media (min-width: 64rem) {
+  .control-panel {
+    transform:
+      translate(
+        var(--panel-offset-x, 0),
+        calc(-50% + var(--panel-offset-y, 0))
+      );
+    box-shadow:
+      -2rem 0 4rem -2.5rem rgb(125 211 252 / 0.55),
+      0 20px 70px rgb(0 0 0 / 0.5);
+  }
 }
 
 @keyframes drift {
@@ -280,8 +400,7 @@ async function handleFocusNode(nodeId: string) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ambient,
-  .spinner {
+  .ambient {
     animation-duration: 0.01ms;
     animation-iteration-count: 1;
   }

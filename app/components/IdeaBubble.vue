@@ -6,6 +6,7 @@ const props = defineProps<{
   node: PositionedIdeaNode
   disabled?: boolean
   isPath?: boolean
+  isRelated?: boolean
   isGeneratingParent?: boolean
 }>()
 
@@ -43,6 +44,7 @@ const diameter = computed(() => props.node.radius * 2)
         {
           'idea-bubble--focused': node.isFocused,
           'idea-bubble--path': isPath && !node.isFocused,
+          'idea-bubble--unrelated': !isRelated,
         },
       ]"
       :disabled="disabled"
@@ -53,7 +55,7 @@ const diameter = computed(() => props.node.radius * 2)
       @dblclick.stop="emit('center', node.id)"
     >
       <span class="max-w-[82%]">
-        <span class="block text-[0.58rem] font-bold tracking-[0.16em] text-white/60 uppercase">
+        <span class="block text-[0.6rem] font-bold tracking-[0.14em] text-white/78 uppercase">
           {{ kindLabels[node.kind] }}
         </span>
         <strong class="mt-1.5 block text-sm leading-snug font-semibold text-white sm:text-[0.95rem]">
@@ -63,7 +65,7 @@ const diameter = computed(() => props.node.radius * 2)
       <span
         v-if="isGeneratingParent"
         class="bubble-spinner"
-        aria-label="この泡から連想を生成中"
+        aria-label="このセルから派生を生成中"
         role="status"
       />
     </button>
@@ -88,7 +90,7 @@ const diameter = computed(() => props.node.radius * 2)
   box-shadow:
     0 0 0 1px rgb(255 255 255 / 0.04) inset,
     0 18px 42px rgb(0 0 0 / 0.28),
-    0 0 34px color-mix(in srgb, var(--bubble-color) 22%, transparent);
+    0 0 28px color-mix(in srgb, var(--bubble-color) 18%, transparent);
   transition:
     transform 120ms ease,
     border-color 120ms ease,
@@ -108,8 +110,8 @@ const diameter = computed(() => props.node.radius * 2)
   box-shadow:
     0 0 0 2px rgb(255 255 255 / 0.16) inset,
     0 22px 55px rgb(0 0 0 / 0.36),
-    0 0 70px color-mix(in srgb, var(--bubble-color) 62%, transparent),
-    0 0 22px color-mix(in srgb, var(--bubble-color) 56%, transparent);
+    0 0 56px color-mix(in srgb, var(--bubble-color) 48%, transparent),
+    0 0 18px color-mix(in srgb, var(--bubble-color) 48%, transparent);
 }
 
 .idea-bubble--path {
@@ -117,7 +119,17 @@ const diameter = computed(() => props.node.radius * 2)
   box-shadow:
     0 0 0 1px rgb(255 255 255 / 0.08) inset,
     0 18px 42px rgb(0 0 0 / 0.3),
-    0 0 42px color-mix(in srgb, var(--bubble-color) 34%, transparent);
+    0 0 34px color-mix(in srgb, var(--bubble-color) 28%, transparent);
+}
+
+.idea-bubble--unrelated {
+  opacity: 0.68;
+  filter: saturate(0.72);
+}
+
+.idea-bubble--unrelated:hover:not(:disabled) {
+  opacity: 0.9;
+  filter: saturate(0.9) brightness(1.08);
 }
 
 .idea-bubble--root { --bubble-color: #7dd3fc; }
@@ -128,14 +140,23 @@ const diameter = computed(() => props.node.radius * 2)
 
 .bubble-spinner {
   position: absolute;
-  inset: 9px;
+  inset: 5px;
   pointer-events: none;
-  border: 3px solid transparent;
-  border-top-color: color-mix(in srgb, var(--bubble-color) 86%, white);
-  border-right-color: color-mix(in srgb, var(--bubble-color) 32%, transparent);
   border-radius: 9999px;
-  filter: drop-shadow(0 0 7px var(--bubble-color));
-  animation: bubble-spin 850ms linear infinite;
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0deg 245deg,
+      color-mix(in srgb, var(--bubble-color) 35%, transparent) 285deg,
+      color-mix(in srgb, var(--bubble-color) 88%, white) 330deg,
+      white 350deg,
+      transparent 360deg
+    );
+  filter:
+    drop-shadow(0 0 5px var(--bubble-color))
+    drop-shadow(0 0 12px color-mix(in srgb, var(--bubble-color) 72%, transparent));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  animation: bubble-spin 1.05s linear infinite;
 }
 
 @keyframes bubble-spin {
