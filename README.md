@@ -143,7 +143,7 @@ direct → distant → alternative
 
 ## Project status
 
-`v0.1.0` は、テーマからアイデアを広げるMVPリリースです。
+`v1.0.0` は、テーマからアイデアを広げる提出版リリースです。
 
 ## License
 

@@ -99,7 +99,7 @@ export function useIdeaSpace() {
     }
 
     if (remainingCapacity.value < GENERATED_ASSOCIATION_COUNT) {
-      return `AI生成には3つ分の空きが必要です。残り${remainingCapacity.value}件は手動で追加できます。`
+      return 'Geminiで生成するには3つ分の空きが必要です。'
     }
 
     return ''

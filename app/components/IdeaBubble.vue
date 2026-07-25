@@ -58,7 +58,7 @@ function handleClick(event: MouseEvent) {
       :disabled="disabled"
       :data-cell-id="node.id"
       :aria-current="node.isFocused ? 'true' : undefined"
-      :aria-label="`${kindLabels[node.kind]}「${node.label}」へフォーカス`"
+      :aria-label="`${kindLabels[node.kind]}「${node.label}」を選択`"
       :title="node.description"
       @click="handleClick"
       @dblclick.stop="emit('center', node.id)"
@@ -74,7 +74,7 @@ function handleClick(event: MouseEvent) {
       <span
         v-if="isGeneratingParent"
         class="bubble-spinner"
-        aria-label="このアイデアから派生を生成中"
+        aria-label="Geminiでアイデアを生成中"
         role="status"
       />
     </button>

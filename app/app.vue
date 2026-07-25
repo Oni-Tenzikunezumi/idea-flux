@@ -174,13 +174,13 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
             name="prompt"
             rows="4"
             maxlength="500"
-            placeholder="例：雨の日の静かな図書館"
+            placeholder="例：雨の日の図書館で遊ぶ方法"
             class="block min-h-36 w-full resize-y rounded-2xl border border-slate-500 bg-canvas/90 px-5 py-4 text-base leading-8 text-white outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-300/15"
             @keydown="handleInitialKeydown"
           />
           <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-xs text-slate-400">
-              Enterで開始・Shift＋Enterで改行
+              Enterで開始・Shift+Enterで改行
             </p>
             <button
               type="submit"
@@ -230,7 +230,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
         <div
           class="control-panel__handle -mx-1 -mt-1 hidden min-h-9 items-center justify-between gap-3 px-2 text-sm font-normal text-slate-300 lg:flex"
           aria-label="操作パネルをドラッグして移動"
-          title="パネルを移動"
+          title="操作パネルをドラッグして移動"
           @pointerdown="handlePanelPointerDown"
           @pointermove="handlePanelPointerMove"
           @pointerup="handlePanelPointerUp"
@@ -293,8 +293,8 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
               type="button"
               :disabled="!canGenerate"
               class="control-icon-button control-icon-button--generate"
-              aria-label="このアイデアから派生生成"
-              title="このアイデアから派生生成"
+              aria-label="Geminiでアイデアを生成"
+              title="Geminiでアイデアを生成"
               @click="generateFromFocusedNode"
             >
               <span v-if="isGenerating" class="control-spinner" aria-hidden="true" />
