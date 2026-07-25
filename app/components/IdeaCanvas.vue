@@ -176,7 +176,7 @@ watch(
 <template>
   <section
     ref="viewport"
-    class="idea-viewport relative h-full min-h-0 overflow-hidden bg-[#07111f]/90"
+    class="idea-viewport relative h-full min-h-0 overflow-hidden bg-canvas/90"
     :class="{ 'cursor-grabbing': isDragging, 'cursor-grab': !isDragging }"
     :aria-busy="isBusy"
     aria-label="アイデア空間。背景をドラッグして移動できます。"
@@ -186,7 +186,7 @@ watch(
     @pointercancel="handlePointerUp"
     @wheel.prevent="handleWheel"
   >
-    <div class="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(3,8,18,0.34)_100%)]" />
+    <div class="idea-vignette pointer-events-none absolute inset-0 z-10" />
     <div
       class="absolute top-4 left-4 z-30 flex items-center gap-1 rounded-full border border-white/15 bg-slate-950/70 p-1 text-xs font-bold text-slate-200 select-none backdrop-blur"
       @pointerdown.stop
@@ -209,7 +209,7 @@ watch(
       >
         −
       </button>
-      <span class="w-10 text-center text-[0.62rem] text-slate-400">
+      <span class="w-10 text-center text-xs text-slate-400">
         {{ Math.round(zoom * 100) }}%
       </span>
       <button
@@ -224,11 +224,9 @@ watch(
     </div>
 
     <div
-      class="idea-world absolute"
+      class="idea-world absolute top-1/2 left-1/2"
       :class="{ 'idea-world--dragging': isDragging }"
       :style="{
-        left: '50%',
-        top: '50%',
         width: `${canvasWidth}px`,
         height: `${canvasHeight}px`,
         transform: `translate(-50%, -50%) translate(${panX}px, ${panY}px) scale(${zoom})`,
@@ -277,52 +275,8 @@ watch(
       </div>
     </div>
 
-    <div class="pointer-events-none absolute bottom-4 left-4 z-20 rounded-full border border-white/10 bg-slate-950/55 px-3 py-1.5 text-[0.65rem] text-slate-400 backdrop-blur">
+    <div class="pointer-events-none absolute bottom-4 left-4 z-20 rounded-full border border-white/10 bg-slate-950/55 px-3 py-1.5 text-xs text-slate-400 backdrop-blur">
       {{ nodes.length }} / {{ maxVisibleCells }} cells · ホイールで拡大縮小
     </div>
   </section>
 </template>
-
-<style scoped>
-.idea-viewport {
-  touch-action: none;
-  user-select: none;
-}
-
-.idea-world {
-  transition: transform 120ms ease-out;
-  transform-origin: center;
-}
-
-.idea-world--dragging {
-  transition: none;
-}
-
-.idea-edge {
-  stroke: rgb(125 211 252 / 0.48);
-  stroke-width: 2.5;
-  transition: stroke 220ms ease, stroke-width 220ms ease, opacity 220ms ease;
-}
-
-.idea-edge--related {
-  stroke: rgb(125 211 252 / 0.68);
-  stroke-width: 2.9;
-}
-
-.idea-edge--active {
-  stroke: rgb(186 230 253 / 0.94);
-  stroke-width: 4;
-  filter: drop-shadow(0 0 4px rgb(125 211 252 / 0.36));
-}
-
-.idea-edge--unrelated {
-  opacity: 0.58;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .idea-world,
-  .idea-edge {
-    transition-duration: 0.01ms;
-  }
-}
-</style>

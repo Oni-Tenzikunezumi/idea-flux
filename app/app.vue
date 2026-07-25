@@ -30,12 +30,12 @@ const kindLabels = {
   custom: 'あなたのアイデア',
 } as const
 
-const kindColors: Record<IdeaNodeKind, string> = {
-  root: '#7dd3fc',
-  direct: '#34d399',
-  distant: '#a78bfa',
-  alternative: '#fb7185',
-  custom: '#fbbf24',
+const kindColorClasses: Record<IdeaNodeKind, string> = {
+  root: 'kind-color--root',
+  direct: 'kind-color--direct',
+  distant: 'kind-color--distant',
+  alternative: 'kind-color--alternative',
+  custom: 'kind-color--custom',
 }
 
 const controlPanel = ref<HTMLElement | null>(null)
@@ -116,7 +116,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
   <main
     class="relative text-slate-100"
     :class="hasSpace
-      ? 'h-[100dvh] overflow-hidden'
+      ? 'h-dvh overflow-hidden'
       : 'min-h-screen overflow-hidden px-3 py-7 sm:px-6 sm:py-10'"
   >
     <div class="ambient ambient-one" aria-hidden="true" />
@@ -127,10 +127,10 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
       class="relative z-10 mx-auto w-full max-w-3xl"
     >
       <header class="mb-10 pt-8 text-center sm:pt-16">
-        <p class="mb-3 text-[0.65rem] font-bold tracking-[0.28em] text-sky-300 uppercase">
+        <p class="mb-3 text-xs font-bold tracking-widest text-sky-300 uppercase">
           Persistent radial idea space
         </p>
-        <h1 class="font-display text-6xl font-semibold tracking-[-0.045em] text-white sm:text-8xl">
+        <h1 class="font-display text-6xl font-semibold tracking-tighter text-white sm:text-8xl">
           Idea Flux
         </h1>
         <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-400 sm:text-base">
@@ -139,12 +139,12 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
       </header>
 
       <section
-        class="rounded-[2rem] border border-slate-700/80 bg-[#101d31]/88 p-5 shadow-[0_30px_100px_rgba(0,0,0,0.38)] backdrop-blur sm:p-8"
+        class="rounded-4xl border border-slate-700/80 bg-paper/90 p-5 shadow-2xl backdrop-blur sm:p-8"
         aria-labelledby="initial-heading"
       >
         <div class="flex items-end justify-between gap-4">
           <div>
-            <p class="text-[0.65rem] font-bold tracking-[0.2em] text-emerald-300 uppercase">
+            <p class="text-xs font-bold tracking-widest text-emerald-300 uppercase">
               Start a new space
             </p>
             <h2 id="initial-heading" class="mt-2 font-display text-2xl font-semibold text-white sm:text-3xl">
@@ -168,7 +168,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
             rows="4"
             maxlength="500"
             placeholder="例：雨の日の静かな図書館"
-            class="block min-h-36 w-full resize-y rounded-2xl border border-slate-600/80 bg-[#07111f]/80 px-5 py-4 text-base leading-8 text-white outline-none transition placeholder:text-slate-600 focus:border-sky-300 focus:ring-4 focus:ring-sky-300/10"
+            class="block min-h-36 w-full resize-y rounded-2xl border border-slate-600/80 bg-canvas/80 px-5 py-4 text-base leading-8 text-white outline-none transition placeholder:text-slate-600 focus:border-sky-300 focus:ring-4 focus:ring-sky-300/10"
             @keydown="handleInitialKeydown"
           />
           <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -200,14 +200,14 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
         @focus="focusNode"
       />
 
-      <header class="pointer-events-none absolute top-4 right-4 z-20 max-w-[55vw] text-right sm:top-6 sm:right-7">
-        <p class="text-[0.55rem] font-bold tracking-[0.22em] text-sky-300 uppercase sm:text-[0.62rem]">
+      <header class="pointer-events-none absolute top-4 right-4 z-20 max-w-sm text-right sm:top-6 sm:right-7">
+        <p class="text-xs font-bold tracking-widest text-sky-300 uppercase">
           Persistent radial idea space
         </p>
-        <h1 class="font-display text-2xl font-semibold tracking-[-0.04em] text-white drop-shadow-lg sm:text-4xl">
+        <h1 class="font-display text-2xl font-semibold tracking-tighter text-white drop-shadow-lg sm:text-4xl">
           Idea Flux
         </h1>
-        <p class="mt-1 text-[0.65rem] text-slate-400 sm:text-xs">
+        <p class="mt-1 text-xs text-slate-400">
           {{ nodes.length }} / {{ maxVisibleCells }} cells
         </p>
       </header>
@@ -215,7 +215,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
       <section
         v-if="focusedNode"
         ref="controlPanel"
-        class="control-panel absolute right-3 bottom-3 left-3 z-20 mx-auto max-h-[42dvh] max-w-5xl overflow-y-auto rounded-2xl border border-sky-200/20 bg-[#0d192b]/94 p-4 shadow-[0_20px_70px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:right-5 sm:bottom-5 sm:left-5 sm:p-5 lg:top-1/2 lg:right-auto lg:bottom-auto lg:left-[calc(50%+7.5rem)] lg:mx-0 lg:max-h-[calc(100dvh-2rem)] lg:w-[min(27rem,calc(50vw-9rem))] lg:max-w-none"
+        class="control-panel absolute right-3 bottom-3 left-3 z-20 mx-auto max-h-2/5 max-w-5xl overflow-y-auto rounded-2xl border border-sky-200/20 bg-panel/95 p-4 shadow-2xl backdrop-blur-xl sm:right-5 sm:bottom-5 sm:left-5 sm:p-5 lg:top-1/2 lg:right-auto lg:bottom-auto lg:left-3/5 lg:mx-0 lg:max-h-11/12 lg:w-1/3 lg:max-w-md"
         :class="{ 'control-panel--dragging': isDraggingPanel }"
         :style="{
           '--panel-offset-x': `${panelOffset.x}px`,
@@ -224,7 +224,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
         aria-labelledby="focused-heading"
       >
         <div
-          class="control-panel__handle -mx-1 -mt-1 mb-3 flex min-h-7 items-center justify-between gap-3 rounded-lg px-2 text-[0.65rem] text-slate-400"
+          class="control-panel__handle -mx-1 -mt-1 mb-3 flex min-h-7 items-center justify-between gap-3 rounded-lg px-2 text-xs text-slate-400"
           aria-label="操作パネルをドラッグして移動"
           @pointerdown="handlePanelPointerDown"
           @pointermove="handlePanelPointerMove"
@@ -249,17 +249,16 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
               <p
-                class="flex items-center gap-1.5 text-[0.6rem] font-bold tracking-[0.18em] uppercase"
-                :style="{ color: kindColors[focusedNode.kind] }"
+                class="kind-color flex items-center gap-1.5 text-xs font-bold tracking-widest uppercase"
+                :class="kindColorClasses[focusedNode.kind]"
               >
                 <span
-                  class="size-1.5 rounded-full shadow-[0_0_8px_currentColor]"
-                  :style="{ backgroundColor: kindColors[focusedNode.kind] }"
+                  class="kind-color-dot size-1.5 rounded-full"
                   aria-hidden="true"
                 />
                 {{ kindLabels[focusedNode.kind] }}
               </p>
-              <span class="text-[0.65rem] text-slate-500">
+              <span class="text-xs text-slate-500">
                 残り {{ remainingCapacity }}
               </span>
             </div>
@@ -279,7 +278,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
               >
                 {{ isGenerating ? '生成中…' : 'Geminiでアイデアを生成' }}
               </button>
-              <p class="hidden text-[0.68rem] text-slate-400 sm:block">
+              <p class="hidden text-xs text-slate-400 sm:block">
                 セルを選ぶと、そのセルを中心に探索できます
               </p>
             </div>
@@ -293,7 +292,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
               <label for="manual-idea" class="text-xs font-bold text-amber-100">
                 自分のアイデアを追加
               </label>
-              <span class="text-[0.62rem] text-slate-500">
+              <span class="text-xs text-slate-500">
                 {{ manualInput.length }} / 30
               </span>
             </div>
@@ -305,7 +304,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
                 maxlength="30"
                 placeholder="このセルからつなげたいこと"
                 :disabled="!canAddManual"
-                class="min-h-10 min-w-0 flex-1 rounded-lg border border-slate-600 bg-[#07111f]/80 px-3 py-2 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-amber-300 focus:ring-3 focus:ring-amber-300/10 disabled:cursor-not-allowed disabled:opacity-45"
+                class="min-h-10 min-w-0 flex-1 rounded-lg border border-slate-600 bg-canvas/80 px-3 py-2 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-amber-300 focus:ring-3 focus:ring-amber-300/10 disabled:cursor-not-allowed disabled:opacity-45"
               />
               <button
                 type="submit"
@@ -336,73 +335,3 @@ onBeforeUnmount(() => window.removeEventListener('resize', resetControlPanelPosi
     </template>
   </main>
 </template>
-
-<style scoped>
-.ambient {
-  position: fixed;
-  z-index: 0;
-  width: 34rem;
-  height: 34rem;
-  pointer-events: none;
-  border-radius: 9999px;
-  filter: blur(90px);
-  opacity: 0.16;
-  animation: drift 18s ease-in-out infinite alternate;
-}
-
-.ambient-one {
-  top: -15rem;
-  left: -10rem;
-  background: #0ea5e9;
-}
-
-.ambient-two {
-  right: -12rem;
-  bottom: -17rem;
-  background: #8b5cf6;
-  animation-delay: -7s;
-}
-
-.control-panel {
-  overscroll-behavior: contain;
-  transform: translate(var(--panel-offset-x, 0), var(--panel-offset-y, 0));
-}
-
-.control-panel--dragging {
-  user-select: none;
-  will-change: transform;
-}
-
-.control-panel__handle {
-  cursor: grab;
-  touch-action: none;
-}
-
-.control-panel--dragging .control-panel__handle {
-  cursor: grabbing;
-}
-
-@media (min-width: 64rem) {
-  .control-panel {
-    transform:
-      translate(
-        var(--panel-offset-x, 0),
-        calc(-50% + var(--panel-offset-y, 0))
-      );
-    box-shadow:
-      -2rem 0 4rem -2.5rem rgb(125 211 252 / 0.55),
-      0 20px 70px rgb(0 0 0 / 0.5);
-  }
-}
-
-@keyframes drift {
-  to { transform: translate3d(2rem, 1rem, 0) scale(1.08); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ambient {
-    animation-duration: 0.01ms;
-    animation-iteration-count: 1;
-  }
-}
-</style>
