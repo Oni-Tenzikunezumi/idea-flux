@@ -10,8 +10,24 @@ export interface AssociationItem {
   description: string
 }
 
+export type FocusedCellSource = 'initial' | 'ai' | 'user'
+
+export type FocusedCellKind =
+  | 'root'
+  | AssociationType
+  | 'custom'
+
+export interface FocusedCellContext {
+  label?: string
+  description?: string
+  source?: FocusedCellSource
+  kind?: FocusedCellKind
+}
+
 export interface AssociationRequest {
+  theme: string
   prompt: string
+  focusedCell?: FocusedCellContext
 }
 
 export interface AssociationResponse {

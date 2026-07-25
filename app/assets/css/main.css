@@ -2,8 +2,8 @@
 
 @theme {
   --color-canvas: #07111f;
-  --color-paper: #101d31;
-  --color-panel: #0d192b;
+  --color-paper: #142742;
+  --color-panel: #1a2e4c;
   --color-ink: #eaf2ff;
   --color-muted: #90a4c3;
   --color-leaf: #34d399;
@@ -62,6 +62,12 @@
     font: inherit;
   }
 
+  textarea::placeholder,
+  input::placeholder {
+    color: #a9bad0;
+    opacity: 1;
+  }
+
   button {
     -webkit-tap-highlight-color: transparent;
   }
@@ -100,6 +106,15 @@
 
 .control-panel {
   overscroll-behavior: contain;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--color-panel) 96%, var(--color-cell-root)),
+      var(--color-panel)
+    );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-cell-root) 12%, transparent) inset,
+    0 24px 70px color-mix(in srgb, black 55%, transparent);
   transform: translate(var(--panel-offset-x, 0), var(--panel-offset-y, 0));
 }
 
@@ -115,6 +130,79 @@
 
 .control-panel--dragging .control-panel__handle {
   cursor: grabbing;
+}
+
+.control-icon-button {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, currentColor 36%, transparent);
+  border-radius: 9999px;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease,
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.control-icon-button svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.control-icon-button--generate {
+  color: var(--color-cell-root);
+  background: color-mix(in srgb, var(--color-cell-root) 10%, transparent);
+}
+
+.control-icon-button--generate svg {
+  fill: currentColor;
+}
+
+.control-icon-button--add {
+  color: var(--color-sun);
+  background: color-mix(in srgb, var(--color-sun) 8%, transparent);
+}
+
+.control-icon-button--add svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.3;
+}
+
+.control-icon-button:hover:not(:disabled) {
+  background: color-mix(in srgb, currentColor 17%, transparent);
+  transform: translateY(-1px);
+}
+
+.control-icon-button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.control-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.32;
+}
+
+.control-icon-button--add:disabled {
+  color: color-mix(in srgb, var(--color-sun) 72%, white);
+  background: color-mix(in srgb, var(--color-sun) 10%, transparent);
+  opacity: 0.58;
+}
+
+.control-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-top-color: currentColor;
+  border-radius: 9999px;
+  animation: bubble-spin 0.9s linear infinite;
 }
 
 .kind-color--root {
@@ -171,19 +259,19 @@
 }
 
 .idea-edge {
-  stroke: color-mix(in srgb, var(--color-cell-root) 48%, transparent);
-  stroke-width: 2.5;
+  stroke: color-mix(in srgb, var(--color-cell-root) 58%, transparent);
+  stroke-width: 2.8;
   transition: stroke 220ms ease, stroke-width 220ms ease, opacity 220ms ease;
 }
 
 .idea-edge--related {
-  stroke: color-mix(in srgb, var(--color-cell-root) 68%, transparent);
-  stroke-width: 2.9;
+  stroke: color-mix(in srgb, var(--color-cell-root) 76%, transparent);
+  stroke-width: 3.2;
 }
 
 .idea-edge--active {
   stroke: color-mix(in srgb, var(--color-cell-root) 94%, white);
-  stroke-width: 4;
+  stroke-width: 4.2;
   filter:
     drop-shadow(
       0 0 4px color-mix(in srgb, var(--color-cell-root) 36%, transparent)
@@ -191,7 +279,7 @@
 }
 
 .idea-edge--unrelated {
-  opacity: 0.58;
+  opacity: 0.64;
 }
 
 .idea-bubble-shell {
@@ -204,7 +292,7 @@
 }
 
 .idea-bubble {
-  border-color: color-mix(in srgb, var(--bubble-color) 38%, transparent);
+  border-color: color-mix(in srgb, var(--bubble-color) 56%, transparent);
   background:
     radial-gradient(
       circle at 32% 24%,
@@ -252,7 +340,7 @@
 }
 
 .idea-bubble--unrelated {
-  opacity: 0.68;
+  opacity: 0.76;
   filter: saturate(0.72);
 }
 
@@ -361,6 +449,17 @@
 
   .bubble-spinner {
     animation-duration: 1.8s;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .control-panel {
+    background: var(--color-panel);
+    backdrop-filter: none;
+  }
+
+  .idea-vignette {
+    opacity: 0.7;
   }
 }
 }
