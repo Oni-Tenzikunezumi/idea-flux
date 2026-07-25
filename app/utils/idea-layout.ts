@@ -1,9 +1,10 @@
 import type { IdeaEdge, IdeaNode, IdeaNodeKind } from '../composables/useIdeaSpace'
 
-export const BUBBLE_MIN_GAP = 18
+export const CELL_MIN_GAP = 18
+export const BRANCH_MIN_GAP = 22
 export const ANGLE_STEP_DEGREES = 18
 export const RADIUS_STEP = 72
-export const MAX_LAYOUT_ATTEMPTS = 24
+export const MAX_LAYOUT_ATTEMPTS = 48
 
 export interface PositionedIdeaNode extends IdeaNode {
   x: number
@@ -21,7 +22,12 @@ const kindRadius: Record<IdeaNodeKind, number> = {
   alternative: 310,
 }
 
-function getBubbleRadius(node: IdeaNode, _isFocused: boolean): number {
+interface Point {
+  x: number
+  y: number
+}
+
+function getCellRadius(node: IdeaNode, _isFocused: boolean): number {
   if (node.kind === 'root') return 76
   return node.label.length > 18 ? 72 : 68
 }
@@ -32,7 +38,7 @@ function overlaps(
 ): boolean {
   return positioned.some((node) => {
     const distance = Math.hypot(candidate.x - node.x, candidate.y - node.y)
-    return distance < candidate.radius + node.radius + BUBBLE_MIN_GAP
+    return distance < candidate.radius + node.radius + CELL_MIN_GAP
   })
 }
 
@@ -84,7 +90,7 @@ function overlapsExistingEdge(
       start.y,
       end.x,
       end.y,
-    ) < candidate.radius + BUBBLE_MIN_GAP
+    ) < candidate.radius + CELL_MIN_GAP
   })
 }
 
@@ -103,7 +109,66 @@ function edgeCrossesExistingNode(
       parent.y,
       candidate.x,
       candidate.y,
-    ) < node.radius + BUBBLE_MIN_GAP
+    ) < node.radius + BRANCH_MIN_GAP
+  })
+}
+
+function crossProduct(origin: Point, first: Point, second: Point): number {
+  return (
+    (first.x - origin.x) * (second.y - origin.y)
+    - (first.y - origin.y) * (second.x - origin.x)
+  )
+}
+
+function isPointOnSegment(point: Point, start: Point, end: Point): boolean {
+  const epsilon = 0.000001
+  return (
+    Math.abs(crossProduct(start, end, point)) <= epsilon
+    && point.x >= Math.min(start.x, end.x) - epsilon
+    && point.x <= Math.max(start.x, end.x) + epsilon
+    && point.y >= Math.min(start.y, end.y) - epsilon
+    && point.y <= Math.max(start.y, end.y) + epsilon
+  )
+}
+
+function branchesCross(aFrom: Point, aTo: Point, bFrom: Point, bTo: Point): boolean {
+  const aStart = crossProduct(aFrom, aTo, bFrom)
+  const aEnd = crossProduct(aFrom, aTo, bTo)
+  const bStart = crossProduct(bFrom, bTo, aFrom)
+  const bEnd = crossProduct(bFrom, bTo, aTo)
+  const epsilon = 0.000001
+
+  if (
+    ((aStart > epsilon && aEnd < -epsilon) || (aStart < -epsilon && aEnd > epsilon))
+    && ((bStart > epsilon && bEnd < -epsilon) || (bStart < -epsilon && bEnd > epsilon))
+  ) {
+    return true
+  }
+
+  return (
+    (Math.abs(aStart) <= epsilon && isPointOnSegment(bFrom, aFrom, aTo))
+    || (Math.abs(aEnd) <= epsilon && isPointOnSegment(bTo, aFrom, aTo))
+    || (Math.abs(bStart) <= epsilon && isPointOnSegment(aFrom, bFrom, bTo))
+    || (Math.abs(bEnd) <= epsilon && isPointOnSegment(aTo, bFrom, bTo))
+  )
+}
+
+function branchCrossesExistingBranch(
+  parent: PositionedIdeaNode,
+  candidate: PositionedIdeaNode,
+  positioned: PositionedIdeaNode[],
+  edges: IdeaEdge[],
+): boolean {
+  const nodeMap = new Map(positioned.map(node => [node.id, node]))
+
+  return edges.some((edge) => {
+    if (edge.fromNodeId === parent.id || edge.toNodeId === parent.id) return false
+
+    const start = nodeMap.get(edge.fromNodeId)
+    const end = nodeMap.get(edge.toNodeId)
+    if (!start || !end) return false
+
+    return branchesCross(parent, candidate, start, end)
   })
 }
 
@@ -119,7 +184,7 @@ export function layoutIdeaSpace(
     ...rootNode,
     x: 0,
     y: 0,
-    radius: getBubbleRadius(rootNode, rootNode.id === focusedNodeId),
+    radius: getCellRadius(rootNode, rootNode.id === focusedNodeId),
     angle: 0,
     isFocused: rootNode.id === focusedNodeId,
   }]
@@ -145,16 +210,18 @@ export function layoutIdeaSpace(
       )
     const siblingIndex = siblings.findIndex(item => item.id === node.id)
     const isRootChild = parent.parentId === null
-    const spread = isRootChild ? Math.PI * 2 : Math.PI * 1.35
+    const spread = isRootChild ? Math.PI * 2 : Math.PI * 0.7
     const startAngle = isRootChild
       ? -Math.PI / 2
       : parent.angle - spread / 2
     const baseAngle = siblings.length === 1
       ? (isRootChild ? -Math.PI / 2 : parent.angle)
       : startAngle + spread * siblingIndex / (siblings.length - (isRootChild ? 0 : 1))
-    const baseRadius = kindRadius[node.kind]
-    const bubbleRadius = getBubbleRadius(node, node.id === focusedNodeId)
+    const depthSpacing = Math.max(0, node.depth - 1) * RADIUS_STEP
+    const baseRadius = kindRadius[node.kind] + depthSpacing
+    const cellRadius = getCellRadius(node, node.id === focusedNodeId)
     let candidate: PositionedIdeaNode | null = null
+    let lastResortCandidate: PositionedIdeaNode | null = null
 
     for (let attempt = 0; attempt < MAX_LAYOUT_ATTEMPTS; attempt += 1) {
       const direction = attempt % 2 === 0 ? 1 : -1
@@ -162,31 +229,46 @@ export function layoutIdeaSpace(
       const angle
         = baseAngle
           + direction * rotationStep * (ANGLE_STEP_DEGREES * Math.PI / 180)
-      const radius = baseRadius + Math.floor(attempt / 10) * RADIUS_STEP
+      const radius = baseRadius + Math.floor(attempt / 8) * RADIUS_STEP
       const proposed: PositionedIdeaNode = {
         ...node,
         x: parent.x + Math.cos(angle) * radius,
         y: parent.y + Math.sin(angle) * radius,
-        radius: bubbleRadius,
+        radius: cellRadius,
         angle,
         isFocused: node.id === focusedNodeId,
       }
 
+      const violatesCellSpacing = overlaps(proposed, positioned)
+      const cellOverlapsBranch = overlapsExistingEdge(proposed, positioned, edges)
+      const branchPassesCell = edgeCrossesExistingNode(parent, proposed, positioned)
+      const crossesBranch = branchCrossesExistingBranch(
+        parent,
+        proposed,
+        positioned,
+        edges,
+      )
+
+      if (!violatesCellSpacing && !cellOverlapsBranch && !branchPassesCell) {
+        lastResortCandidate = proposed
+      }
+
       if (
-        !overlaps(proposed, positioned)
-        && !overlapsExistingEdge(proposed, positioned, edges)
-        && !edgeCrossesExistingNode(parent, proposed, positioned)
+        !violatesCellSpacing
+        && !cellOverlapsBranch
+        && !branchPassesCell
+        && !crossesBranch
       ) {
         candidate = proposed
         break
       }
     }
 
-    positioned.push(candidate ?? {
+    positioned.push(candidate ?? lastResortCandidate ?? {
       ...node,
       x: parent.x + Math.cos(baseAngle) * (baseRadius + RADIUS_STEP * 3),
       y: parent.y + Math.sin(baseAngle) * (baseRadius + RADIUS_STEP * 3),
-      radius: bubbleRadius,
+      radius: cellRadius,
       angle: baseAngle,
       isFocused: node.id === focusedNodeId,
     })
