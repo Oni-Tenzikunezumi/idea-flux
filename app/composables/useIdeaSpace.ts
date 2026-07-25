@@ -6,7 +6,7 @@ import type {
 } from '../../shared/types/association'
 
 export const GENERATED_ASSOCIATION_COUNT = 3
-export const MAX_VISIBLE_NODES = 50
+export const MAX_VISIBLE_CELLS = 50
 
 export type IdeaNodeSource = 'initial' | 'ai' | 'user'
 
@@ -56,7 +56,7 @@ export function useIdeaSpace() {
     () => nodes.value.find(node => node.id === focusedNodeId.value) ?? null,
   )
   const remainingCapacity = computed(
-    () => Math.max(0, MAX_VISIBLE_NODES - nodes.value.length),
+    () => Math.max(0, MAX_VISIBLE_CELLS - nodes.value.length),
   )
   const canGenerate = computed(
     () =>
@@ -72,7 +72,7 @@ export function useIdeaSpace() {
   )
   const capacityMessage = computed(() => {
     if (remainingCapacity.value === 0) {
-      return '表示できる泡の上限に達しました。'
+      return '表示できるセルの上限に達しました。'
     }
 
     if (remainingCapacity.value < GENERATED_ASSOCIATION_COUNT) {
@@ -216,6 +216,7 @@ export function useIdeaSpace() {
     canGenerate,
     canAddManual,
     capacityMessage,
+    maxVisibleCells: MAX_VISIBLE_CELLS,
     startSpace,
     generateFromFocusedNode,
     focusNode,
