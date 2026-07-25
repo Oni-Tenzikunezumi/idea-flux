@@ -33,18 +33,25 @@ export interface IdeaEdge {
   kind: IdeaNodeKind
 }
 
+export type IdeaNodeFocusInput = 'mouse' | 'touch' | 'keyboard'
+
+export interface IdeaNodeFocusRequest {
+  nodeId: string
+  input: IdeaNodeFocusInput
+}
+
 function getErrorMessage(error: unknown): string {
   if (typeof error === 'object' && error !== null && 'data' in error) {
     const data = (error as { data?: ApiErrorResponse }).data
     if (data?.error?.message) return data.error.message
   }
 
-  return '連想を生成できませんでした。時間をおいてもう一度お試しください。'
+  return 'アイデアを生成できませんでした。時間をおいてもう一度お試しください。'
 }
 
 export function useIdeaSpace() {
   const initialPrompt = ref('')
-  const manualInput = ref('')
+  const manualDrafts = ref<Record<string, string>>({})
   const nodes = ref<IdeaNode[]>([])
   const edges = ref<IdeaEdge[]>([])
   const focusedNodeId = ref<string | null>(null)
@@ -55,6 +62,22 @@ export function useIdeaSpace() {
   const focusedNode = computed(
     () => nodes.value.find(node => node.id === focusedNodeId.value) ?? null,
   )
+  const themeNode = computed(
+    () => nodes.value.find(node => node.parentId === null) ?? null,
+  )
+  const manualInput = computed({
+    get: () => {
+      if (!focusedNodeId.value) return ''
+      return manualDrafts.value[focusedNodeId.value] ?? ''
+    },
+    set: (value: string) => {
+      if (!focusedNodeId.value) return
+      manualDrafts.value = {
+        ...manualDrafts.value,
+        [focusedNodeId.value]: value,
+      }
+    },
+  })
   const remainingCapacity = computed(
     () => Math.max(0, MAX_VISIBLE_CELLS - nodes.value.length),
   )
@@ -72,7 +95,7 @@ export function useIdeaSpace() {
   )
   const capacityMessage = computed(() => {
     if (remainingCapacity.value === 0) {
-      return '表示できるセルの上限に達しました。'
+      return '表示できるアイデアの上限に達しました。'
     }
 
     if (remainingCapacity.value < GENERATED_ASSOCIATION_COUNT) {
@@ -82,8 +105,18 @@ export function useIdeaSpace() {
     return ''
   })
 
-  async function requestAssociations(sourcePrompt: string): Promise<AssociationResponse> {
-    const body: AssociationRequest = { prompt: sourcePrompt }
+  async function requestAssociations(parent: IdeaNode): Promise<AssociationResponse> {
+    const description = parent.description?.trim()
+    const body: AssociationRequest = {
+      theme: themeNode.value?.label ?? parent.label,
+      prompt: parent.label,
+      focusedCell: {
+        ...(parent.label.length <= 30 ? { label: parent.label } : {}),
+        ...(description ? { description } : {}),
+        source: parent.source,
+        kind: parent.kind,
+      },
+    }
     return await $fetch<AssociationResponse>('/api/associations', {
       method: 'POST',
       body,
@@ -105,7 +138,7 @@ export function useIdeaSpace() {
     isGenerating.value = true
 
     try {
-      const response = await requestAssociations(parent.label)
+      const response = await requestAssociations(parent)
       const createdAt = Date.now()
       const childNodes: IdeaNode[] = response.associations.map((association, index) => ({
         id: association.id,
@@ -153,6 +186,7 @@ export function useIdeaSpace() {
 
     nodes.value = [root]
     edges.value = []
+    manualDrafts.value = {}
     focusedNodeId.value = root.id
     initialPrompt.value = label
     errorMessage.value = ''
@@ -165,12 +199,22 @@ export function useIdeaSpace() {
     await generateChildren(focusedNodeId.value)
   }
 
-  function focusNode(nodeId: string) {
-    if (isGenerating.value) return
-    if (!nodes.value.some(node => node.id === nodeId)) return
+  function focusNode(nodeId: string): boolean {
+    if (isGenerating.value) return false
+    if (!nodes.value.some(node => node.id === nodeId)) return false
 
     focusedNodeId.value = nodeId
     errorMessage.value = ''
+    return true
+  }
+
+  function updateNodeDescription(nodeId: string, value: string) {
+    const description = value === '' ? undefined : value
+    nodes.value = nodes.value.map(node =>
+      node.id === nodeId
+        ? { ...node, description }
+        : node,
+    )
   }
 
   function addManualNode() {
@@ -198,7 +242,10 @@ export function useIdeaSpace() {
 
     nodes.value = [...nodes.value, node]
     edges.value = [...edges.value, edge]
-    manualInput.value = ''
+    const nextDrafts = { ...manualDrafts.value }
+    delete nextDrafts[parent.id]
+    manualDrafts.value = nextDrafts
+    focusedNodeId.value = node.id
     errorMessage.value = ''
   }
 
@@ -209,6 +256,7 @@ export function useIdeaSpace() {
     edges,
     focusedNodeId,
     focusedNode,
+    themeNode,
     errorMessage,
     isGenerating,
     hasSpace,
@@ -220,6 +268,7 @@ export function useIdeaSpace() {
     startSpace,
     generateFromFocusedNode,
     focusNode,
+    updateNodeDescription,
     addManualNode,
   }
 }

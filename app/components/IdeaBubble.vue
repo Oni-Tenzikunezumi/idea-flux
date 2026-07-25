@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import type { IdeaNodeKind } from '../composables/useIdeaSpace'
+import type {
+  IdeaNodeFocusInput,
+  IdeaNodeKind,
+} from '../composables/useIdeaSpace'
 import type { PositionedIdeaNode } from '../utils/idea-layout'
 
 const props = defineProps<{
@@ -11,19 +14,24 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  focus: [nodeId: string]
+  focus: [nodeId: string, input: IdeaNodeFocusInput]
   center: [nodeId: string]
 }>()
 
 const kindLabels: Record<IdeaNodeKind, string> = {
-  root: '起点',
-  direct: '直接関係',
-  distant: '少し離れた',
-  alternative: '別観点',
+  root: 'テーマ',
+  direct: '深掘る',
+  distant: '広げる',
+  alternative: '別角度',
   custom: 'あなたのアイデア',
 }
 
 const diameter = computed(() => props.node.radius * 2)
+
+function handleClick(event: MouseEvent) {
+  if (event.detail !== 0) return
+  emit('focus', props.node.id, 'keyboard')
+}
 </script>
 
 <template>
@@ -48,10 +56,11 @@ const diameter = computed(() => props.node.radius * 2)
         },
       ]"
       :disabled="disabled"
+      :data-cell-id="node.id"
       :aria-current="node.isFocused ? 'true' : undefined"
       :aria-label="`${kindLabels[node.kind]}「${node.label}」へフォーカス`"
       :title="node.description"
-      @click="emit('focus', node.id)"
+      @click="handleClick"
       @dblclick.stop="emit('center', node.id)"
     >
       <span class="max-w-4/5">
@@ -65,7 +74,7 @@ const diameter = computed(() => props.node.radius * 2)
       <span
         v-if="isGeneratingParent"
         class="bubble-spinner"
-        aria-label="このセルから派生を生成中"
+        aria-label="このアイデアから派生を生成中"
         role="status"
       />
     </button>
