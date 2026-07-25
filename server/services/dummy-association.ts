@@ -1,4 +1,7 @@
-import type { AssociationResponse } from '../../shared/types/association'
+import type {
+  AssociationRequest,
+  AssociationResponse,
+} from '../../shared/types/association'
 
 const compactPrompt = (prompt: string) => {
   const singleLine = prompt.replace(/\s+/g, ' ')
@@ -8,29 +11,32 @@ const compactPrompt = (prompt: string) => {
     : singleLine
 }
 
-export const createDummyAssociations = (prompt: string): AssociationResponse => {
-  const subject = compactPrompt(prompt)
+export const createDummyAssociations = (
+  request: AssociationRequest,
+): AssociationResponse => {
+  const subject = compactPrompt(request.prompt)
+  const theme = compactPrompt(request.theme)
 
   return {
-    sourcePrompt: prompt,
+    sourcePrompt: request.prompt,
     associations: [
       {
         id: globalThis.crypto.randomUUID(),
         type: 'direct',
         label: `${subject}を深める`,
-        description: `「${subject}」の中心的な特徴を掘り下げ、具体的な形へ発展させるアイデアです。`,
+        description: `「${subject}」を具体化し、「${theme}」を実現・発展させるための次の手がかりにします。`,
       },
       {
         id: globalThis.crypto.randomUUID(),
         type: 'distant',
         label: `${subject}を別分野へ`,
-        description: `「${subject}」の要素を少し離れた分野と組み合わせ、新しいつながりを探るアイデアです。`,
+        description: `別分野の仕組みや素材を「${subject}」へ取り込み、「${theme}」の選択肢を広げます。`,
       },
       {
         id: globalThis.crypto.randomUUID(),
         type: 'alternative',
         label: `${subject}を逆から見る`,
-        description: `「${subject}」の前提や立場を反転させ、別の視点から捉え直すアイデアです。`,
+        description: `「${subject}」の前提や立場を変え、「${theme}」を別の角度から前進させます。`,
       },
     ],
   }

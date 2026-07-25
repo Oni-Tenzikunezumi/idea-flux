@@ -21,8 +21,8 @@ const generatedItemProperties = {
   description: {
     type: 'string',
     minLength: 1,
-    maxLength: 80,
-    description: 'A concise Japanese explanation without Markdown.',
+    maxLength: 120,
+    description: 'A concise Japanese explanation of the idea and its contribution to the theme, without Markdown.',
   },
 } as const
 
@@ -122,7 +122,7 @@ function parseItem(value: unknown, expectedType: AssociationType): GeneratedAsso
     label.length < 1
     || label.length > 30
     || description.length < 1
-    || description.length > 80
+    || description.length > 120
     || !japanesePattern.test(label)
     || !japanesePattern.test(description)
   ) {
